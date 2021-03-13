@@ -1,3 +1,25 @@
+
+<h4 align="center">An extension for the unbeliva Discord Bot, made with pybeliva and discord.py slash ext </h4>
+
+<p align="center">
+  <a href="https://github.com/Benjamin-1111/unb-ext#description">
+    <img src="https://img.shields.io/badge/description-blue.svg"
+         alt="description">
+  </a>
+    <a href="https://github.com/Benjamin-1111/unb-ext#installation">
+    <img src="https://img.shields.io/badge/installation-green.svg"
+         alt="installation">
+    </a>
+    <a href="https://github.com/Benjamin-1111/unb-ext#usage">
+    <img src="https://img.shields.io/badge/usage-red.svg"
+         alt="usage">
+    </a>
+    <a href="https://github.com/Benjamin-1111/unb-ext#license">
+    <img src="https://img.shields.io/badge/license-blue.svg"
+         alt="license">
+    </a>
+</p>
+
 <p align="center">
   <a href="#description">Description</a> •
   <a href="#installation">Installation</a> •
