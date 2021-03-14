@@ -3,7 +3,7 @@
 
 <p align="center">
   <a href="https://github.com/Benjamin-1111/unb-ext#description">
-    <img src="https://img.shields.io/badge/description-lightblue.svg"
+    <img src="https://img.shields.io/badge/description-green.svg"
          alt="description">
   </a>
     <a href="https://github.com/Benjamin-1111/unb-ext#installation">
@@ -11,11 +11,11 @@
          alt="installation">
     </a>
     <a href="https://github.com/Benjamin-1111/unb-ext#usage">
-    <img src="https://img.shields.io/badge/usage-red.svg"
+    <img src="https://img.shields.io/badge/usage-green.svg"
          alt="usage">
     </a>
     <a href="https://github.com/Benjamin-1111/unb-ext#license">
-    <img src="https://img.shields.io/badge/license-blue.svg"
+    <img src="https://img.shields.io/badge/license-green.svg"
          alt="license">
     </a>
 </p>
