@@ -3,7 +3,7 @@
 
 <p align="center">
   <a href="https://github.com/Benjamin-1111/unb-ext#description">
-    <img src="https://img.shields.io/badge/description-blue.svg"
+    <img src="https://img.shields.io/badge/description-lightblue.svg"
          alt="description">
   </a>
     <a href="https://github.com/Benjamin-1111/unb-ext#installation">
