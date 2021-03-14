@@ -214,6 +214,65 @@ class Economy(commands.Cog):
         
         channel = bot.get_channel(int(data[str(ctx.guild.id)]['log']))
 
+    @cog_ext.cog_subcommand(base="collect", name="income", description="Erhalte dein Geld.", guild_ids=guild_ids)
+    async def collect_income(self, ctx: SlashContext):
+        with open('data_store.json', 'r') as f:
+            data = json.load(f)
+        if time.strftime("%d%m%y") == str(data[str(ctx.guild.id)][str(ctx.author.id)]['collected']):
+            await ctx.channel.send('Kein Income mehr vorhanden.')
+            return
+        mond = int(data[str(ctx.guild.id)][str(ctx.author.id)]['mond'])
+        mars = int(data[str(ctx.guild.id)][str(ctx.author.id)]['mars'])
+        saturn = int(data[str(ctx.guild.id)][str(ctx.author.id)]['saturn'])
+        jupiter = int(data[str(ctx.guild.id)][str(ctx.author.id)]['jupiter'])
+        total = mond*500000 + mars*1000000 + saturn*1500000 + jupiter*2000000
+        if total <= 0:
+            await ctx.channel.send('Kein Income vorhanden')
+            return
+        await self.unb_client.patch_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id, bank=total, reason=f"Collected ext income\n**Details:** {bot.get_channel(data[str(ctx.guild.id)]['log']).mention}")
+        
+        webhook_url = str(data[str(ctx.guild.id)]['webhook'])
+        webhook = DiscordWebhook(url=webhook_url, content='')
+        guild = await self.unb_client.get_guild(ctx.guild.id)
+        currency = guild.symbol
+        text = ''
+        if mond*500000 > 0:
+            embed1 = DiscordEmbed(title='', description=f'**User:** {ctx.author.mention}\n**Item:** Mond\n**Amount:** {mond*500000}\n**Incomes:** {mond}\n**Reason:** colected income', color='03b2f8')
+            embed1.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
+            embed1.set_timestamp()
+            webhook.add_embed(embed1)
+            text += f'{mond}\*{currency}500000 | Mond | Amount: {mond*500000}\n'
+        
+        if mars*1000000 > 0:
+            embed1 = DiscordEmbed(title='', description=f'**User:** {ctx.author.mention}\n**Item:** Mars\n**Amount:** {mars*1000000}\n**Incomes:** {mars}\n**Reason:** colected income', color='03b2f8')
+            embed1.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
+            embed1.set_timestamp()
+            webhook.add_embed(embed1)
+            text += f'{mars}\*{currency}1000000 | Mars | Amount: {mars*1000000}\n'
+            
+        if saturn*1500000 > 0:
+            embed1 = DiscordEmbed(title='', description=f'**User:** {ctx.author.mention}\n**Item:** Saturn\n**Amount:** {saturn*1500000}\n**Incomes:** {saturn}\n**Reason:** colected income', color='03b2f8')
+            embed1.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
+            embed1.set_timestamp()
+            webhook.add_embed(embed1)
+            text += f'{saturn}\*{currency}1500000 | Saturn | Amount: {saturn*1500000}\n'
+            
+        if jupiter*2000000 > 0:
+            embed1 = DiscordEmbed(title='', description=f'**User:** {ctx.author.mention}\n**Item:** Jupiter\n**Amount:** {jupiter*2000000}\n**Incomes:** {jupiter}\n**Reason:** colected income', color='03b2f8')
+            embed1.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
+            embed1.set_timestamp()
+            webhook.add_embed(embed1)
+            text += f'{jupiter}\*{currency}2000000 | Jupiter | Amount: {jupiter*2000000}\n'
+        
+        embed = discord.Embed(title='', description=f'income collected:\n{text}', timestamp=time)
+        #embed.set_timestamp(time)
+        await ctx.send(embed=embed)
+        response = webhook.execute()
+        data[str(ctx.guild.id)][str(ctx.author.id)]['collected'] = time.strftime("%d%m%y")
+        with open('data_store.json', 'w') as f:
+            json.dump(data, f, indent=4)
+        
+                                                 
 with open('bot-settings.json', 'r') as f:
     data = json.load(f)
 
