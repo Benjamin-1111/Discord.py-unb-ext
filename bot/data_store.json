@@ -10,6 +10,7 @@
             "saturn": 0,
             "jupiter": 0,
             "treibstoff": 0
+            "collected": "0"
         }
     }
 }
