@@ -282,6 +282,9 @@ class Economy(commands.Cog):
         if len(str(Beschreibung)) > 200:
             await ctx.channel.send('Bitte wähle eine kürzere Beschreibung.')
             return
+        if len(Find(str(Beschreibung))) > 0:
+            await ctx.channel.send('Du darfst keine Links in deinem giveaway haben!')
+            return
         if Public == 'Public':
             role = 818136401757339680 #everyone
         else:
@@ -326,7 +329,8 @@ class Economy(commands.Cog):
             and i != ctx.author and role in e
         ]
         print(msg.reactions, candidates)
-        
+        webhook_url = str(data[str(ctx.guild.id)]['webhook'])
+        webhook = DiscordWebhook(url=webhook_url, content='')
         try:
             winner: Union[User, Member] = random.choice(
                 candidates
@@ -337,6 +341,10 @@ class Economy(commands.Cog):
                 ctx.guild.id, winner.id, cash=Amount, reason="giveaway winner"
             )
             await msg.clear_reactions()
+            embed2 = DiscordEmbed(title='', description=f'**User:** {winner.mention}\n**Action:** Giveaway won\n**Amount:** +{Amount}', color='03b2f8')
+            embed2.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
+            embed2.set_timestamp()
+            webhook.add_embed(embed2)
         except:
             embed = discord.Embed(title="Giveaway", description='No winners')
             await msg.edit(embed = embed)
@@ -344,18 +352,12 @@ class Economy(commands.Cog):
         
         with open('data_store.json', 'r') as f:
             data = json.load(f)
-        webhook_url = str(data[str(ctx.guild.id)]['webhook'])
-        webhook = DiscordWebhook(url=webhook_url, content='')
-        embed1 = DiscordEmbed(title='', description=f'**User:** {ctx.author.mention}\n**Action:** Giveaway\n**Amount:** -{Amount}', color='03b2f8')
-        embed2 = DiscordEmbed(title='', description=f'**User:** {winner.mention}\n**Action:** Giveaway won\n**Amount:** +{Amount}', color='03b2f8')
-        embed1.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
-        embed2.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
-        embed1.set_timestamp()
-        embed2.set_timestamp()
-        webhook.add_embed(embed1)
-        webhook.add_embed(embed2)
-        response = webhook.execute()
 
+        embed1 = DiscordEmbed(title='', description=f'**User:** {ctx.author.mention}\n**Action:** Giveaway\n**Amount:** -{Amount}', color='03b2f8')
+        embed1.set_author(name='Balance updated', icon_url='https://images-ext-2.discordapp.net/external/i0QukyQFeMvyky2L88d-lcpPGvruP_5XcvHxmsx56R0/https/media.discordapp.net/attachments/506838906872922145/551888336525197312/update.png')
+        embed1.set_timestamp()
+        webhook.add_embed(embed1)
+        response = webhook.execute()
 
 with open('bot-settings.json', 'r') as f:
     data = json.load(f)
