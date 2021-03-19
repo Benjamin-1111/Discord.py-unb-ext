@@ -1,6 +1,6 @@
 import json
 from discord_slash import cog_ext
-
+from typing import Union, cast
 import discord
 from discord_slash import SlashCommand,SlashContext
 import random
@@ -10,12 +10,25 @@ import pybelieva
 import datetime
 import asyncio
 from discord_webhook import DiscordWebhook, DiscordEmbed
+from discord.utils import get
+from discord import Guild, Member, Reaction, User, utils
+import re 
+  
+
 
 bot = commands.Bot(command_prefix = '-', intents=discord.Intents.all())
 slash = SlashCommand(bot, sync_commands=True)
 
 guild_ids = [818136401757339680] 
 time = datetime.datetime.now()
+
+
+def Find(string): 
+    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    url = re.findall(regex,string)       
+    return [x[0] for x in url] 
+
+
 
 class Economy(commands.Cog):
     _token: str
@@ -58,13 +71,15 @@ class Economy(commands.Cog):
                 "mond": 0,
                 "mars": 0,
                 "saturn": 0,
-                "jupiter": 0
+                "jupiter": 0,
+                "treibstoff": 0,
+                "collected": "0"
             }
             with open('data_store.json', 'w') as f:
                 json.dump(data, f, indent=4)
         
         if data[str(ctx.guild.id)][str(ctx.author.id)]['amount'] > 0:
-            await ctx.channel.send('Du hast bereits Geld geliehen, bitte Zahle dieses zurück, bevor du einen neuen Kredit aufnehmen kannst.')
+            await ctx.channel.send(f'Du hast bereits Geld geliehen, bitte Zahle dieses zurück, bevor du einen neuen Kredit aufnehmen kannst.\n> {ctx.author} hat den command **`/lend amount: {amount}`** genutzt.')
             return
         tax = int(int(amount) * self.tax)
         after_tax = int(int(amount) + ((self.tax/100)*int(amount)))
@@ -108,6 +123,7 @@ class Economy(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def setlog(self, ctx, channel: discord.TextChannel = None):
+    
         if channel == None:
             channel = ctx.channel
         for i in await ctx.guild.webhooks():
@@ -122,7 +138,6 @@ class Economy(commands.Cog):
             json.dump(data, f, indent=4)
         await ctx.channel.send(f'setted the new log channel to {channel.mention}')
 
-
     @cog_ext.cog_subcommand(base="shop", name="buy", description="Kaufe dir ein Item erneut.", guild_ids=guild_ids, options=[manage_commands.create_option(description='Bitte gebe das Iteam das du kaufen möchtest an.', name='item', required=True, option_type=(3), choices=['Mond', 'Mars', 'Saturn', 'Jupiter', 'Treibstoff']), manage_commands.create_option(name = "amount", description=f"Bitte gebe an, wie oft du das Item kaufen willst (Du kannst überspringen, wenn du nur 1 möchtest)",option_type = 4,required = False)]) #, create_choices=('hello', 'foo', 'bar'))])
     async def group_shop(self, ctx: SlashContext, item='', amount=1):
         await ctx.respond(eat=False)
@@ -130,18 +145,32 @@ class Economy(commands.Cog):
         bal = await self.unb_client.get_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id)
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
+        if str(ctx.author.id) not in list(data[str(ctx.guild.id)]):
+            data[str(ctx.guild.id)][str(ctx.author.id)] = {
+                "amount": 0,
+                "time": 0,
+                "mond": 0,
+                "mars": 0,
+                "saturn": 0,
+                "jupiter": 0,
+                "treibstoff": 0,
+                "collected": "0",
+            }
+            with open('data_store.json', 'w') as f:
+                json.dump(data, f, indent=4)
         e = []
         for i in ctx.author.roles:
             e.append(i.id)
         if item == 'Treibstoff':
             amount2 = 500000
             if amount2*amount > bal.cash + bal.bank:
-                await ctx.channel.send(f'Du hast leider nicht genug um dir {amount} mal {item} kaufen zu können')
+                await ctx.channel.send(f'Du hast leider nicht genug Geld um dir {amount} mal {item} kaufen zu können')
                 return
             items = int(data[str(ctx.guild.id)][str(ctx.author.id)][str(item).lower()]) + int(amount)
             
             if int(data[str(ctx.guild.id)]['rakete']) not in e:
-                await ctx.send('Du brauchst die Raketen-Rolle, um dir Treibstoff zu kaufen')
+                await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.\nDie Raketen Rolle kannst du dir im normalen shop von <@292953664492929025> für 500.000 Coins kaufen!')
+                return
             if bal.cash - int(amount2*amount) > 0:
                 cash = int(amount2*amount)
                 bank = 0
@@ -152,7 +181,7 @@ class Economy(commands.Cog):
                 
                 bank = total - cash
                 await self.unb_client.patch_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id, cash=-cash, bank = -bank, reason=f"bought new Item\n**Details:** {bot.get_channel(data[str(ctx.guild.id)]['log']).mention}")
-
+            #return
             
             data[str(ctx.guild.id)][str(ctx.author.id)][str(item).lower()] = items
             with open('data_store.json', 'w') as f:
@@ -180,16 +209,19 @@ class Economy(commands.Cog):
             await ctx.channel.send(f'Du hast leider nicht genug Geld um dir {amount} mal {item} kaufen zu können')
             return
         if int(data[str(ctx.guild.id)]['rakete']) not in e:
-            await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.')
+            await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.\nDie Raketen Rolle kannst du dir im normalen shop von <@292953664492929025> für 500.000 Coins kaufen!')
+            return
+        if int(data[str(ctx.guild.id)][str(ctx.author.id)]['treibstoff']) < amount:
+            await ctx.send(f'Du hast leider nicht genug Treibstoff. kaufe dir neuen mit**`/shop buy item:Treibstoff amount:1`**')
+            return
+
         items = int(data[str(ctx.guild.id)][str(ctx.author.id)][str(item).lower()]) + int(amount)
         print(items)
         data[str(ctx.guild.id)][str(ctx.author.id)][str(item).lower()] = items
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
         print(int(amount2*amount))
-        if int(data[str(ctx.guild.id)][str(ctx.author.id)]['treibstoff']) < amount:
-            await ctx.send(f'Du hast leider nicht genug Treibstoff. kaufe dir neuen mit**`/shop buy item:Treibstoff amount:1`**')
-            return
+
         data[str(ctx.guild.id)][str(ctx.author.id)]['treibstoff'] = int(data[str(ctx.guild.id)][str(ctx.author.id)]['treibstoff']) - int(amount)
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
@@ -218,8 +250,22 @@ class Economy(commands.Cog):
 
     @cog_ext.cog_subcommand(base="collect", name="income", description="Erhalte dein Geld.", guild_ids=guild_ids)
     async def collect_income(self, ctx: SlashContext):
+        await ctx.respond(eat=False)
         with open('data_store.json', 'r') as f:
             data = json.load(f)
+        if str(ctx.author.id) not in list(data[str(ctx.guild.id)]):
+            data[str(ctx.guild.id)][str(ctx.author.id)] = {
+                "amount": 0,
+                "time": 0,
+                "mond": 0,
+                "mars": 0,
+                "saturn": 0,
+                "jupiter": 0,
+                "treibstoff": 0,
+                "collected": "0"
+            }
+            with open('data_store.json', 'w') as f:
+                json.dump(data, f, indent=4)
         if time.strftime("%d%m%y") == str(data[str(ctx.guild.id)][str(ctx.author.id)]['collected']):
             await ctx.channel.send('Kein Income mehr vorhanden.')
             return
@@ -273,10 +319,76 @@ class Economy(commands.Cog):
         data[str(ctx.guild.id)][str(ctx.author.id)]['collected'] = time.strftime("%d%m%y")
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
+        
+        embed3 = discord.Embed(title='some stufff', description='some more stuff' ,type='rich')
 
+
+    @cog_ext.cog_slash(name='items', description='Erhalte eine Liste aller items die du hast.', guild_ids=guild_ids, options=[manage_commands.create_option(description='Du kannst einen anderen user angeben. Ansosnten wirst du genommen.', name='User', required=False, option_type=(6))])
+    async def items(self, ctx: commands.Context, User=None):
+        await ctx.respond(eat=False)
+        if User is None:
+            User = ctx.author
+        with open('data_store.json', 'r') as f:
+            data = json.load(f)
+        if str(ctx.author.id) not in list(data[str(ctx.guild.id)]):
+            data[str(ctx.guild.id)][str(ctx.author.id)] = {
+                "amount": 0,
+                "time": 0,
+                "mond": 0,
+                "mars": 0,
+                "saturn": 0,
+                "jupiter": 0,
+                "treibstoff": 0,
+                "collected": "0"
+            }
+            with open('data_store.json', 'w') as f:
+                json.dump(data, f, indent=4)
+        if str(ctx.guild.id) not in list(data):
+            return await ctx.send("Diese Guild ist leider nicht registriert.")
+        if str(User.id) not in list(data[str(ctx.guild.id)]):
+            return await ctx.send('Dieser User hat noch keine Incomes.')
+        text = f'Role incomes von {User.mention}\n'
+        if int(data[str(ctx.guild.id)][str(User.id)]["mond"]) > 0:
+            text += f'{data[str(ctx.guild.id)][str(User.id)]["mond"]}x Mond\n'
+            print(text)
+            
+        if int(data[str(ctx.guild.id)][str(User.id)]['mars']) > 0:
+            text += f'{data[str(ctx.guild.id)][str(User.id)]["mars"]}x Mars\n'
+            print(text)
+            
+        if int(data[str(ctx.guild.id)][str(User.id)]['saturn']) > 0:
+            text += f'{data[str(ctx.guild.id)][str(User.id)]["saturn"]}x Saturn\n'
+            print(text)
+            
+        if int(data[str(ctx.guild.id)][str(User.id)]['jupiter']) > 0:
+            text += f'{data[str(ctx.guild.id)][str(User.id)]["jupiter"]}x Jupiter\n'
+            print(text)
+            
+        if int(data[str(ctx.guild.id)][str(User.id)]['treibstoff']) > 0:
+            text += f'{data[str(ctx.guild.id)][str(User.id)]["treibstoff"]}x Treibstoff\n'
+            print(text)
+            
+        embed = discord.Embed(title='', description=text)
+        
+        await ctx.channel.send(embed=embed)
     @cog_ext.cog_slash(description="Verschenke Geld", guild_ids=guild_ids, options=[manage_commands.create_option(description='Bitte gebe an, wie viel Geld du verschenken möchtest.', name='Amount', required=True, option_type=(4)), manage_commands.create_option(description='Soll Das giveaway für alle zugänglich sein, oder nur für den PinguClan?', name='Public', required=False, option_type=(3), choices=['Public', 'Private']), manage_commands.create_option(description='Gebe eine custom beschreibung an. Zeichenlimit: 200; Links sind verboten.', name='Beschreibung', required=False, option_type=3)])
     async def giveaway(self, ctx: commands.Context, Amount = 0, Public = 'False', Beschreibung=''):
         await ctx.respond(eat=False)
+        with open('data_store.json', 'r') as f:
+            data = json.load(f)
+        if str(ctx.author.id) not in list(data[str(ctx.guild.id)]):
+            data[str(ctx.guild.id)][str(ctx.author.id)] = {
+                "amount": 0,
+                "time": 0,
+                "mond": 0,
+                "mars": 0,
+                "saturn": 0,
+                "jupiter": 0,
+                "treibstoff": 0,
+                "collected": "0"
+            }
+            with open('data_store.json', 'w') as f:
+                json.dump(data, f, indent=4)
         print(Public)
         print(len(str(Beschreibung)))
         if len(str(Beschreibung)) > 200:
@@ -358,7 +470,15 @@ class Economy(commands.Cog):
         embed1.set_timestamp()
         webhook.add_embed(embed1)
         response = webhook.execute()
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
 with open('bot-settings.json', 'r') as f:
     data = json.load(f)
 
