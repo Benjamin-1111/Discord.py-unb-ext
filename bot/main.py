@@ -143,9 +143,25 @@ class Economy(commands.Cog):
         data[str(ctx.guild.id)]['log'] = channel.id
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
-        await ctx.channel.send(f'setted the new log channel to {channel.mention}')
-
-
+        await ctx.channel.send(f'set the new log channel to {channel.mention}')
+        
+    @cog_ext.cog_subcommand(base="amount", name="lended", description="Zeige dir an, wie viel Geld du geliehen hast.", guild_ids=guild_ids, options=[manage_commands.create_option(description='Du kannst noch optional einen user hinzufügen.', name='user', required=False, option_type=(6))]) 
+    async def amount_lended(self, ctx: SlashContext, user:discord.Member=None):
+        await ctx.respond(eat=False)
+        if user == None:
+            user = ctx.author
+        with open('data_store.json', 'r+') as f:
+            data = json.load(f)
+        if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
+            await ctx.channel.send(f'{user.mention} ist aus dem Economy-ext System geblockt.')
+            return
+        guild = await self.unb_client.get_guild(ctx.guild.id)
+        currency = guild.symbol
+        if data[str(ctx.guild.id)][str(user.id)]["amount"] > 0:
+            await ctx.channel.send(f'{user.mention} hat noch {data[str(ctx.guild.id)][str(user.id)]["amount"]}{currency} Schulden!')
+        else:
+            await ctx.channel.send(f'{user.mention} hat keine Schulden!')
+    
     @cog_ext.cog_subcommand(base="shop", name="buy", description="Kaufe dir ein Item erneut.", guild_ids=guild_ids, options=[manage_commands.create_option(description='Bitte gebe das Iteam das du kaufen möchtest an.', name='item', required=True, option_type=(3), choices=['Mond', 'Mars', 'Saturn', 'Jupiter', 'Treibstoff']), manage_commands.create_option(name = "amount", description=f"Bitte gebe an, wie oft du das Item kaufen willst (Du kannst überspringen, wenn du nur 1 möchtest)",option_type = 4,required = False)]) 
     async def group_shop(self, ctx: SlashContext, item='', amount=1):
         await ctx.respond(eat=False)
