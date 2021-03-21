@@ -87,12 +87,10 @@ pip install discord-py-slash-command
                  Jupiter amount: 1
  /lend amount: 100
  /collect income
- /giveaway
- /giveaway amount:1 1 public:Public  beschreibung: some description
-                             Private beschreibung: some description
-/incomes user: @some_user
-/refund amount: 100
-/amount lend user: @some_user
+ /giveaway amount:1 1 beschreibung: some description
+ /incomes user: @some_user
+ /refund amount: 100
+ /amount lend user: @some_user
  ```
 ### Owner settings (normal commands)
 ```
