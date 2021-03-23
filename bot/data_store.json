@@ -1,8 +1,11 @@
 {
+    "tax": 35,
     "818136401757339680": {
         "log": log-channel-ID,
         "rakete": 820032284903997471,
+        "everyone": 818136401757339680,
         "webhook": "Your webhook, can be setup with the setlog command",
+        "blocked": [],
         "798556932151181363": {
             "amount": 0,
             "time": 0,
