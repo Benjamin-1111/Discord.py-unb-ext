@@ -13,7 +13,8 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 from discord.utils import get
 from discord import Guild, Member, Reaction, User, utils
 import re 
-  
+import traceback
+import sys
 
 
 bot = commands.Bot(command_prefix = '-', intents=discord.Intents.all())
@@ -448,7 +449,7 @@ class Economy(commands.Cog):
             await ctx.channel.send('Du darfst keine Links in deinem giveaway haben!')
             return
         if Public == 'Public':
-            role = 818136401757339680 #everyone 
+            role = data[str(ctx.guild.id)]['everyone'] #everyone 
         else:
             role = 821320546918072320 
             
@@ -644,9 +645,75 @@ class Economy(commands.Cog):
         await ctx.channel.send(f'{user.mention} wurde erfolgreich gewhitelisted.')
 
 
-with open('bot-settings.json', 'r') as f:
-    data = json.load(f)
+    @commands.command(aliases=['set-tax'])
+    @commands.has_permissions(manage_guild=True)
+    async def tax(self, ctx, tax=None):
+        if tax == None:
+            await ctx.channel.send('Bitte gebe einen Wert für **`new_tax`** an.')
+            return
+        if not tax.isdecimal():
+            await ctx.channel.send('Bitte geb eine gültige decimalzahl an!')
+            return
+        with open('data_store.json', 'r+') as f:
+            data = json.load(f)
+        data["tax"] = int(tax)
+        with open('data_store.json', 'w') as f:
+            json.dump(data, f, indent=4)
+        self.tax = int(tax)
+    @commands.command(aliases=['set-everyone'])
+    @commands.has_permissions(manage_guild=True)
+    async def everyone(self, ctx, everyone: discord.Role = None):
+        with open('data_store.json', 'r+') as f:
+            data = json.load(f)
+        if everyone == None:
+            return await ctx.channel.send('Bitte gebe eine gültige Rolle an!')
+        guild = ctx.guild
+        roles = []
+        for i in guild.roles:
+            roles.append(i.id)
+        if everyone.id not in roles:
+            return await ctx.channel.send('Unbekannte Rolle!')
+        data[str(ctx.guild.id)]["everyone"] = everyone.id
+        with open('data_store.json', 'w') as f:
+            json.dump(data, f, indent=4)
+        await ctx.channel.send(f'Die everyone Rolle wurde geändert. Sie ist nun: {everyone.id}')
 
-bot.add_cog(Economy(str(data['unb']), "\N{MONEY WITH WINGS}", tax = 2.3))
+    @commands.command(aliases=['set-rakete'])
+    @commands.has_permissions(manage_guild=True)
+    async def rakete(self, ctx, rakete: discord.Role = None):
+        with open('data_store.json', 'r+') as f:
+            data = json.load(f)
+        if rakete == None:
+            return await ctx.channel.send('Bitte gebe eine Rolle an!')
+        guild = ctx.guild
+        roles = []
+        for i in guild.roles:
+            roles.append(i.id)
+        if rakete.id not in roles:
+            return await ctx.channel.send('Unbekannte Rolle!')
+        data[str(ctx.guild.id)]["rakete"] = rakete.id
+        with open('data_store.json', 'w') as f:
+            json.dump(data, f, indent=4)
+        await ctx.channel.send(f'Die rakete Rolle wurde geändert. Sie ist nun: {rakete.id}')
+        
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        """The event triggered when an error is raised while invoking a command.
+        Parameters
+        ------------
+        ctx: commands.Context
+            The context used for command invocation.
+        error: commands.CommandError
+            The Exception raised.
+        """
+        if isinstance(error, commands.RoleNotFound):
+            #if ctx.command.qualified_name == 'tag list':  # Check if the command being invoked is 'tag list'
+            await ctx.send('Role not found')
+                
+with open('bot-settings.json', 'r+') as f:
+    data = json.load(f)
+with open('data_store.json', 'r+') as f:
+    data2 = json.load(f)
+bot.add_cog(Economy(str(data['unb']), "\N{MONEY WITH WINGS}", tax = int(data2["tax"])))
 bot.load_extension("jishaku")
 bot.run(str(data['discord']))
