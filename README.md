@@ -97,6 +97,9 @@ pip install discord-py-slash-command
  -setlog <channel ID>
  -blacklist <user>
  -whitelist <user>
+ -everyone <role>
+ -rakete <role>
+ -tax <tax>
 ```
 
 
