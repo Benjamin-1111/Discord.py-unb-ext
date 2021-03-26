@@ -24,11 +24,11 @@ guild_ids = [818136401757339680]
 time = datetime.datetime.now()
 
 
-def Find(string): 
+def Find(string):
 
     regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-    url = re.findall(regex,string)       
-    return [x[0] for x in url] 
+    url = re.findall(regex,string)
+    return [x[0] for x in url]
 
 
 
@@ -57,16 +57,20 @@ class Economy(commands.Cog):
         with open('data_store.json', 'r') as f:
             data = json.load(f)
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!', hidden=True)
             return
         if int(amount) < 0:
-            await ctx.channel.send('danke für den Versuch uns Geld zu schenken, aber wir nehmen keine negativen Kredite auf')
+            await ctx.respond(eat=True)
+            await ctx.send('danke für den Versuch uns Geld zu schenken, aber wir nehmen keine negativen Kredite auf', hidden=True)
             return
         if int(amount) >= 10000000:
-            await ctx.channel.send('Das ist sehr viel Geld, bitte melde dich bei Delfini oder Pinguini für so einen hohen Kredit')
+            await ctx.respond(eat=True)
+            await ctx.send('Das ist sehr viel Geld, bitte melde dich bei Delfini für so einen hohen Kredit', hidden=True)
             return
         if int(amount) == 0:
-            await ctx.channel.send('Und für was brauchst du einen Kredit inhöhe von 0 coins?')
+            await ctx.respond(eat=True)
+            await ctx.send('Und für was brauchst du einen Kredit inhöhe von 0 coins?', hidden=True)
             return
         
 
@@ -87,13 +91,14 @@ class Economy(commands.Cog):
                 json.dump(data, f, indent=4)
         
         if data[str(ctx.guild.id)][str(ctx.author.id)]['amount'] > 0:
-            await ctx.channel.send(f'Du hast bereits Geld geliehen, bitte Zahle dieses zurück, bevor du einen neuen Kredit aufnehmen kannst.\n> {ctx.author} hat den command **`/lend amount: {amount}`** genutzt.')
+            await ctx.respond(eat=True)
+            await ctx.send(f'Du hast bereits Geld geliehen, bitte Zahle dieses zurück, bevor du einen neuen Kredit aufnehmen kannst.\n> {ctx.author} hat den command **`/lend amount: {amount}`** genutzt.', hidden=True)
             return
         tax = int(int(amount) * self.tax)
         after_tax = int(int(amount) + ((self.tax/100)*int(amount)))
         guild = await self.unb_client.get_guild(ctx.guild.id)
         currency = guild.symbol
-        message = await ctx.channel.send(f'Möchest du dir{currency}{amount} leihen?. Bis in 4 Wochen musst du {currency}{after_tax} zurückzahlen. Für Jeden weiteren Tag fallen {currency}25000 an! Bitte reagiere mit **`👍`** um zuzustimmen')
+        message = await ctx.send(f'Möchest du dir{currency}{amount} leihen?. Bis in 4 Wochen musst du {currency}{after_tax} zurückzahlen. Für Jeden weiteren Tag fallen {currency}25000 an! Bitte reagiere mit **`👍`** um zuzustimmen')
         await message.add_reaction('👍')
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) == '👍' and message.id == reaction.message.id
@@ -103,7 +108,7 @@ class Economy(commands.Cog):
             await ctx.send('Action timed out')
             return
         
-        await ctx.channel.send(f'Du hast dir {currency}{amount} geliehen. Bis in 4 Wochen musst du {currency}{after_tax} zurückzahlen. Für Jeden weiteren Tag fallen {currency}25000 an!')
+        await ctx.send(f'Du hast dir {currency}{amount} geliehen. Bis in 4 Wochen musst du {currency}{after_tax} zurückzahlen. Für Jeden weiteren Tag fallen {currency}25000 an!')
         
         await self.unb_client.patch_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id, bank=int(amount), reason=f"lend command\n**Details:** {bot.get_channel(data[str(ctx.guild.id)]['log']).mention}")
         date = time.strftime("%d%m%Y")
@@ -144,7 +149,7 @@ class Economy(commands.Cog):
         data[str(ctx.guild.id)]['log'] = channel.id
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
-        await ctx.channel.send(f'set the new log channel to {channel.mention}')
+        await ctx.send(f'set the new log channel to {channel.mention}')
         
     @cog_ext.cog_subcommand(base="amount", name="lended", description="Zeige dir an, wie viel Geld du geliehen hast.", guild_ids=guild_ids, options=[manage_commands.create_option(description='Du kannst noch optional einen user hinzufügen.', name='user', required=False, option_type=(6))]) 
     async def amount_lended(self, ctx: SlashContext, user:discord.Member=None):
@@ -154,16 +159,18 @@ class Economy(commands.Cog):
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send(f'{user.mention} ist aus dem Economy-ext System geblockt.')
+            await ctx.respond(eat=True)
+            await ctx.send(f'{user.mention} ist aus dem Economy-ext System geblockt.', hidden=True)
             return
         guild = await self.unb_client.get_guild(ctx.guild.id)
         currency = guild.symbol
         if data[str(ctx.guild.id)][str(user.id)]["amount"] > 0:
-            await ctx.channel.send(f'{user.mention} hat noch {data[str(ctx.guild.id)][str(user.id)]["amount"]}{currency} Schulden!')
+            
+            await ctx.send(f'{user.mention} hat noch {data[str(ctx.guild.id)][str(user.id)]["amount"]}{currency} Schulden!')
         else:
-            await ctx.channel.send(f'{user.mention} hat keine Schulden!')
+            await ctx.send(f'{user.mention} hat keine Schulden!')
     
-    @cog_ext.cog_subcommand(base="shop", name="buy", description="Kaufe dir ein Item erneut.", guild_ids=guild_ids, options=[manage_commands.create_option(description='Bitte gebe das Iteam das du kaufen möchtest an.', name='item', required=True, option_type=(3), choices=['Mond', 'Mars', 'Saturn', 'Jupiter', 'Treibstoff']), manage_commands.create_option(name = "amount", description=f"Bitte gebe an, wie oft du das Item kaufen willst (Du kannst überspringen, wenn du nur 1 möchtest)",option_type = 4,required = False)]) 
+    @cog_ext.cog_slash(name="shop-buy", description="Kaufe dir ein Item erneut.", guild_ids=guild_ids, options=[manage_commands.create_option(description='Bitte gebe das Iteam das du kaufen möchtest an.', name='item', required=True, option_type=(3), choices=['Mond', 'Mars', 'Saturn', 'Jupiter', 'Treibstoff']), manage_commands.create_option(name = "amount", description=f"Bitte gebe an, wie oft du das Item kaufen willst (Du kannst überspringen, wenn du nur 1 möchtest)",option_type = 4,required = False)]) 
     async def group_shop(self, ctx: SlashContext, item='', amount=1):
         await ctx.respond(eat=False)
         
@@ -186,7 +193,8 @@ class Economy(commands.Cog):
                 json.dump(data, f, indent=4)
 
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!', hidden=True)
             return
             
         e = []
@@ -195,12 +203,14 @@ class Economy(commands.Cog):
         if item == 'Treibstoff':
             amount2 = 500000
             if amount2*amount > bal.cash + bal.bank:
-                await ctx.channel.send(f'Du hast leider nicht genug Geld um dir {amount} mal {item} kaufen zu können')
+                await ctx.respond(eat=True)
+                await ctx.send(f'Du hast leider nicht genug Geld um dir {amount} mal {item} kaufen zu können', hidden=True)
                 return
             items = int(data[str(ctx.guild.id)][str(ctx.author.id)][str(item).lower()]) + int(amount)
             
             if int(data[str(ctx.guild.id)]['rakete']) not in e:
-                await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.\nDie Raketen Rolle kannst du dir im normalen shop von <@292953664492929025> für 500.000 Coins kaufen!')
+                await ctx.respond(eat=True)
+                await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.\nDie Raketen Rolle kannst du dir im normalen shop von <@292953664492929025> für 500.000 Coins kaufen!', hidden=True)
                 return
             if bal.cash - int(amount2*amount) > 0:
                 cash = int(amount2*amount)
@@ -236,13 +246,16 @@ class Economy(commands.Cog):
         else:
             return
         if amount2*amount > bal.cash + bal.bank:
-            await ctx.channel.send(f'Du hast leider nicht genug Geld um dir {amount} mal {item} kaufen zu können')
+            await ctx.respond(eat=True)
+            await ctx.send(f'Du hast leider nicht genug Geld um dir {amount} mal {item} kaufen zu können', hidden=True)
             return
         if int(data[str(ctx.guild.id)]['rakete']) not in e:
-            await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.\nDie Raketen Rolle kannst du dir im normalen shop von <@292953664492929025> für 500.000 Coins kaufen!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du brauchst die Raketen-Rolle, um zu einem Planet fliegen zu können.\nDie Raketen Rolle kannst du dir im normalen shop von <@292953664492929025> für 500.000 Coins kaufen!', hidden=True)
             return
         if int(data[str(ctx.guild.id)][str(ctx.author.id)]['treibstoff']) < amount:
-            await ctx.send(f'Du hast leider nicht genug Treibstoff. kaufe dir neuen mit**`/shop buy item:Treibstoff amount:1`**')
+            await ctx.respond(eat=True)
+            await ctx.send(f'Du hast leider nicht genug Treibstoff. kaufe dir neuen mit**`/shop buy item:Treibstoff amount:1`**', hidden=True)
             return
 
         items = int(data[str(ctx.guild.id)][str(ctx.author.id)][str(item).lower()]) + int(amount)
@@ -280,7 +293,7 @@ class Economy(commands.Cog):
 
     @cog_ext.cog_subcommand(base="collect", name="income", description="Erhalte dein Geld.", guild_ids=guild_ids)
     async def collect_income(self, ctx: SlashContext):
-        await ctx.respond(eat=False)
+        
         with open('data_store.json', 'r') as f:
             data = json.load(f)
         if str(ctx.author.id) not in list(data[str(ctx.guild.id)]):
@@ -298,16 +311,19 @@ class Economy(commands.Cog):
             with open('data_store.json', 'w') as f:
                 json.dump(data, f, indent=4)
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!', hidden=True)
             return
         if time.strftime("%d%m%y") == str(data[str(ctx.guild.id)][str(ctx.author.id)]['collected']):
-            await ctx.channel.send('Kein Income mehr vorhanden.')
+            await ctx.respond(eat=True)
+            await ctx.send('Kein Income mehr vorhanden.', hidden=True)
             return
         week = data[str(ctx.guild.id)][str(ctx.author.id)]["week"]
         if week + 1 <= int(time.isocalendar()[1]):
             pass
         else:
-            await ctx.channel.send('Kein Income mehr vorhanden.')
+            await ctx.respond(eat=True)
+            await ctx.send('Kein Income mehr vorhanden.', hidden=True)
             return
         
         mond = int(data[str(ctx.guild.id)][str(ctx.author.id)]['mond'])
@@ -316,8 +332,10 @@ class Economy(commands.Cog):
         jupiter = int(data[str(ctx.guild.id)][str(ctx.author.id)]['jupiter'])
         total = mond*500000 + mars*1000000 + saturn*1500000 + jupiter*2000000
         if total <= 0:
-            await ctx.channel.send('Kein Income vorhanden')
+            await ctx.respond(eat=True)
+            await ctx.send('Kein Income vorhanden', hidden=True)
             return
+        await ctx.respond(eat=False)
         await self.unb_client.patch_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id, bank=total, reason=f"Collected ext income\n**Details:** {bot.get_channel(data[str(ctx.guild.id)]['log']).mention}")
         
         webhook_url = str(data[str(ctx.guild.id)]['webhook'])
@@ -367,7 +385,7 @@ class Economy(commands.Cog):
 
     @cog_ext.cog_slash(name='items', description='Erhalte eine Liste aller items die du hast.', guild_ids=guild_ids, options=[manage_commands.create_option(description='Du kannst einen anderen user angeben. Ansosnten wirst du genommen.', name='User', required=False, option_type=(6))])
     async def items(self, ctx: commands.Context, User=None):
-        await ctx.respond(eat=False)
+        
         if User is None:
             User = ctx.author
         with open('data_store.json', 'r') as f:
@@ -387,12 +405,16 @@ class Economy(commands.Cog):
             with open('data_store.json', 'w') as f:
                 json.dump(data, f, indent=4)
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!', hidden=True)
             return
         if str(ctx.guild.id) not in list(data):
-            return await ctx.send("Diese Guild ist leider nicht registriert.")
+            await ctx.respond(eat=True)
+            return await ctx.send("Diese Guild ist leider nicht registriert.", hidden=True)
         if str(User.id) not in list(data[str(ctx.guild.id)]):
-            return await ctx.send('Dieser User hat noch keine Incomes.')
+            await ctx.respond(eat=True)
+            return await ctx.send('Dieser User hat noch keine Incomes.', hidden=True)
+        await ctx.respond(eat=False)
         text = f'Role incomes von {User.mention}\n'
         if int(data[str(ctx.guild.id)][str(User.id)]["mond"]) > 0:
             text += f'{data[str(ctx.guild.id)][str(User.id)]["mond"]}x Mond\n'
@@ -416,10 +438,11 @@ class Economy(commands.Cog):
             
         embed = discord.Embed(title='', description=text)
         
-        await ctx.channel.send(embed=embed)
+        await ctx.send(embed=embed)
+        
     @cog_ext.cog_slash(description="Verschenke Geld", guild_ids=guild_ids, options=[manage_commands.create_option(description='Bitte gebe an, wie viel Geld du verschenken möchtest.', name='Amount', required=True, option_type=(4)), manage_commands.create_option(description='Gebe eine custom beschreibung an. Zeichenlimit: 200; Links sind verboten.', name='Beschreibung', required=False, option_type=3)])
-    async def giveaway(self, ctx: commands.Context, Amount = 0, Public = 'Public', Beschreibung=''):
-        await ctx.respond(eat=False)
+    async def giveaway(self, ctx: commands.Context, Amount = 0, Beschreibung='', Public = 'Public'):
+        #await ctx.respond(eat=False)
         Public = 'Public'
         with open('data_store.json', 'r') as f:
             data = json.load(f)
@@ -438,15 +461,18 @@ class Economy(commands.Cog):
             with open('data_store.json', 'w') as f:
                 json.dump(data, f, indent=4)
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!', hidden=True)
             return
         print(Public)
         print(len(str(Beschreibung)))
         if len(str(Beschreibung)) > 200:
-            await ctx.channel.send('Bitte wähle eine kürzere Beschreibung.')
+            await ctx.respond(eat=True)
+            await ctx.send('Bitte wähle eine kürzere Beschreibung.', hidden=True)
             return
         if len(Find(str(Beschreibung))) > 0:
-            await ctx.channel.send('Du darfst keine Links in deinem giveaway haben!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du darfst keine Links in deinem giveaway haben!', hidden=True)
             return
         if Public == 'Public':
             role = data[str(ctx.guild.id)]['everyone'] #everyone 
@@ -454,12 +480,16 @@ class Economy(commands.Cog):
             role = 821320546918072320 
             
         if Amount <= 0:
-            return await ctx.send("Du solltest schon ein bischen mehr verschenken ;)")
+            await ctx.respond(eat=True)
+            await ctx.send("Du kannst nicht minus Beträge verschenken.", hidden=True)
+            return
         bal = await self.unb_client.get_user_balance(
             ctx.guild.id, ctx.author.id
         )  
         if bal.cash < Amount: 
-            return await ctx.send("Du hast leider nicht genug Geld bei dir..")
+            await ctx.respond(eat=True)
+            return await ctx.send("Du hast leider nicht genug Geld bei dir..", hidden=True)
+        await ctx.respond(eat=False)
         guild = await self.unb_client.get_guild(ctx.guild.id)
         currency = guild.symbol
         await self.unb_client.patch_user_balance( 
@@ -523,22 +553,23 @@ class Economy(commands.Cog):
     @cog_ext.cog_slash(name='refund', description='Bezahle dein geliehenes Geld zurück', guild_ids=guild_ids, options=[manage_commands.create_option(description='Du kannst optional angeben, wie viel du zurückzahlen möchstest. default: das maximum.', name='amount', required=False, option_type=(4))])
     async def refund(self, ctx: commands.Context, amount=None):
         print(amount)
-        await ctx.respond(eat=False)
+        
         with open('data_store.json', 'r') as f:
             data = json.load(f)
         if ctx.author.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!')
+            await ctx.respond(eat=True)
+            await ctx.send('Du bist aus dem Economy-ext System ausgeschlossen. Wenn dies unberechtigt ist, kannst du dich gerne in einem Ticket an Delfini wenden!', hidden=True)
             return
         if amount == 0:
-            await ctx.channel.send('Du kannst nicht 0 coins zurückzahlen')
+            await ctx.respond(eat=True)
+            await ctx.send('Du kannst nicht 0 coins zurückzahlen', hidden=True)
             return                
         
         if str(amount).startswith('-'):
             amount = str(amount)[1:]
         
         
-        print('1')
-
+        
         if str(ctx.author.id) not in list(data[str(ctx.guild.id)]):
             data[str(ctx.guild.id)][str(ctx.author.id)] = {
                 "amount": 0,
@@ -554,21 +585,18 @@ class Economy(commands.Cog):
             with open('data_store.json', 'w') as f:
                 json.dump(data, f, indent=4)
         if data[str(ctx.guild.id)][str(ctx.author.id)]['amount'] == 0:
-            await ctx.channel.send('Du hast gar keine schulden mehr')
+            await ctx.respond(eat=True)
+            await ctx.send('Du hast gar keine schulden mehr', hidden=True)
             return                                       
         
         if amount == None:
-            print(data[str(ctx.guild.id)][str(ctx.author.id)]['amount'])
             amount = data[str(ctx.guild.id)][str(ctx.author.id)]['amount']
-            print('automativylly')
         amount = int(amount)
-        print(amount)
         bal1 = await self.unb_client.get_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id)
         bal = bal1.cash + bal1.bank
-        print(bal)
-        print('1')
         if int(bal) <= 0:
-            await ctx.channel.send('Du hast leider nicht genug Geld.')
+            await ctx.respond(eat=True)
+            await ctx.send('Du hast leider nicht genug Geld.', hidden=True)
             return
 
         if amount > data[str(ctx.guild.id)][str(ctx.author.id)]['amount']:
@@ -576,32 +604,25 @@ class Economy(commands.Cog):
         if amount > bal:
             amount = bal
             
-        print('1')
         if int(bal1.cash) - int(amount) > 0:
-            print(-int(amount))
             await self.unb_client.patch_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id, cash=-int(amount), reason=f"used refund command\n**Details:** {bot.get_channel(data[str(ctx.guild.id)]['log']).mention}")
             data[str(ctx.guild.id)][str(ctx.author.id)]['amount'] -= int(amount)
-            print('a1')
         else:
             total = int(amount)
             cash = bal1.cash
             
             bank = total - cash
-            print(-cash)
-            print(-bank)
             await self.unb_client.patch_user_balance(guild_id=ctx.guild.id, user_id=ctx.author.id, cash=-cash, bank = -bank, reason=f"used refund command\n**Details:** {bot.get_channel(data[str(ctx.guild.id)]['log']).mention}")
             data[str(ctx.guild.id)][str(ctx.author.id)]['amount'] -= int(amount)
-            print(int(amount))
-            print(data[str(ctx.guild.id)][str(ctx.author.id)]['amount'])
-            print('b1')
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
         guild = await self.unb_client.get_guild(ctx.guild.id)
         currency = guild.symbol
+        await ctx.respond(eat=False)
         if data[str(ctx.guild.id)][str(ctx.author.id)]['amount'] == 0:
-            await ctx.channel.send(f'Du hast {int(amount)}{currency} zurückgezahlt. Du hast jetzt keine Schulden mehr!')
+            await ctx.send(f'Du hast {int(amount)}{currency} zurückgezahlt. Du hast jetzt keine Schulden mehr!')
         else:
-            await ctx.channel.send(f'Du hast {int(amount)}{currency} zurückgezahlt. Du hast noch {data[str(ctx.guild.id)][str(ctx.author.id)]["amount"]}{currency} Schulden!')
+            await ctx.send(f'Du hast {int(amount)}{currency} zurückgezahlt. Du hast noch {data[str(ctx.guild.id)][str(ctx.author.id)]["amount"]}{currency} Schulden!')
         
         
         webhook_url = str(data[str(ctx.guild.id)]['webhook'])
@@ -616,43 +637,43 @@ class Economy(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def block(self, ctx, user: discord.Member=None):
         if user == None:
-            await ctx.channel.send('Bitte gebe einen user an der geblockt werden soll')
+            await ctx.send('Bitte gebe einen user an der geblockt werden soll')
             return
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
         if user.id in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Der ist bereits aus dem economy-system geblocket')
+            await ctx.send('Der ist bereits aus dem economy-system geblocket')
             return
         data[str(ctx.guild.id)]['blocked'].append(user.id)
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
-        await ctx.channel.send(f'{user.mention} wurde erfolgreich geblockt.')
+        await ctx.send(f'{user.mention} wurde erfolgreich geblockt.')
     
     @commands.command(aliases=['whitelist'])
     @commands.has_permissions(manage_guild=True)
     async def unblock(self, ctx, user: discord.Member=None):
         if user == None:
-            await ctx.channel.send('Bitte gebe einen user an der entblocked werden soll')
+            await ctx.send('Bitte gebe einen user an der entblocked werden soll')
             return
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
         if user.id not in list(data[str(ctx.guild.id)]['blocked']):
-            await ctx.channel.send('Der ist gar nicht geblockt')
+            await ctx.send('Der ist gar nicht geblockt')
             return
         data[str(ctx.guild.id)]['blocked'].remove(user.id)
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
-        await ctx.channel.send(f'{user.mention} wurde erfolgreich gewhitelisted.')
+        await ctx.send(f'{user.mention} wurde erfolgreich gewhitelisted.')
 
 
     @commands.command(aliases=['set-tax'])
     @commands.has_permissions(manage_guild=True)
     async def tax(self, ctx, tax=None):
         if tax == None:
-            await ctx.channel.send('Bitte gebe einen Wert für **`new_tax`** an.')
+            await ctx.send('Bitte gebe einen Wert für **`new_tax`** an.')
             return
         if not tax.isdecimal():
-            await ctx.channel.send('Bitte geb eine gültige decimalzahl an!')
+            await ctx.send('Bitte geb eine gültige decimalzahl an!')
             return
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
@@ -666,17 +687,17 @@ class Economy(commands.Cog):
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
         if everyone == None:
-            return await ctx.channel.send('Bitte gebe eine gültige Rolle an!')
+            return await ctx.send('Bitte gebe eine gültige Rolle an!')
         guild = ctx.guild
         roles = []
         for i in guild.roles:
             roles.append(i.id)
         if everyone.id not in roles:
-            return await ctx.channel.send('Unbekannte Rolle!')
+            return await ctx.send('Unbekannte Rolle!')
         data[str(ctx.guild.id)]["everyone"] = everyone.id
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
-        await ctx.channel.send(f'Die everyone Rolle wurde geändert. Sie ist nun: {everyone.id}')
+        await ctx.send(f'Die everyone Rolle wurde geändert. Sie ist nun: {everyone.id}')
 
     @commands.command(aliases=['set-rakete'])
     @commands.has_permissions(manage_guild=True)
@@ -684,32 +705,24 @@ class Economy(commands.Cog):
         with open('data_store.json', 'r+') as f:
             data = json.load(f)
         if rakete == None:
-            return await ctx.channel.send('Bitte gebe eine Rolle an!')
+            return await ctx.send('Bitte gebe eine Rolle an!')
         guild = ctx.guild
         roles = []
         for i in guild.roles:
             roles.append(i.id)
         if rakete.id not in roles:
-            return await ctx.channel.send('Unbekannte Rolle!')
+            return await ctx.send('Unbekannte Rolle!')
         data[str(ctx.guild.id)]["rakete"] = rakete.id
         with open('data_store.json', 'w') as f:
             json.dump(data, f, indent=4)
-        await ctx.channel.send(f'Die rakete Rolle wurde geändert. Sie ist nun: {rakete.id}')
+        await ctx.send(f'Die rakete Rolle wurde geändert. Sie ist nun: {rakete.id}')
         
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        """The event triggered when an error is raised while invoking a command.
-        Parameters
-        ------------
-        ctx: commands.Context
-            The context used for command invocation.
-        error: commands.CommandError
-            The Exception raised.
-        """
         if isinstance(error, commands.RoleNotFound):
-            #if ctx.command.qualified_name == 'tag list':  # Check if the command being invoked is 'tag list'
             await ctx.send('Role not found')
-                
+
+
 with open('bot-settings.json', 'r+') as f:
     data = json.load(f)
 with open('data_store.json', 'r+') as f:
