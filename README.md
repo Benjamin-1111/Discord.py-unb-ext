@@ -62,8 +62,7 @@ pip install discord-py-slash-command
 - Go to the [Discord Developer Portal](discord.com/developers/applications)
 - Login
 - Klick on 'New Application'
-- Fill In the Bot name
-(- Choose a Team, default is your Personal)
+- Fill In the Bot name (Choose a Team, default is your Personal)
 - Go to the 'Bot' tab in your application
 - Klick on 'Add Bot'
 - Klick on 'Yes, do it!'
